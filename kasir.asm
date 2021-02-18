@@ -1,21 +1,54 @@
 
 [bits 64]
 
-section .data
-	menu1	db "----- Selamat Datang di Aplikasi Sistem Kasir! -----",10,0
-	menu2	db "--- [Menu] ---",10,0
-	menu3	db 9,"1. List daftar barang",10,0
-	menu4	db 9,"2. Tambah barang",10,0
-	menu5	db 9,"3. Hapus barang",10,0
-	menu6	db "Masukkan pilihan: ",0
-	align	8
-	m_arr	dq menu1, menu2, menu3, menu4, menu5, menu6, 0
+section .rodata
+align	8
+menu_str:
+	db 0x1b, 0x63
+	db "----- Selamat Datang di Aplikasi Sistem Kasir! -----",10
+	db "--- [Menu] ---",10
+	db 9,"1. List daftar barang",10
+	db 9,"2. Tambah barang",10
+	db 9,"3. Hapus barang",10
+	db 9,"4. Tutup aplikasi",10
+	db "Masukkan pilihan: ",0
+
+align	8
+invalid_menu_num_str:
+	db 0x1b, 0x63
+	db "!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!",10
+	db 9,"Menu yang Anda masukkan tidak valid!",10
+	db 9,"Silakan masukkan ulang pilihan Anda...",10,10
+	db 9,"Tekan enter untuk melanjutkan...",10
+	db "!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!",10,0
+
+
+align	8
+daftar_barang_str:
+	db 0x1b, 0x63
+	db "----------------------------------------------------",10
+	db 9,"[ Menu Daftar Barang ]",10
+	db "----------------------------------------------------",10,0
+
+align	8
+tutup_aplikasi_str:
+	db 10,"Aplikasi ditutup...",10,0
+
+
+align	8
+menu_jump_table:
+	dq	menu_list_daftar_barang
+	dq	0
+	dq	0
+	dq	-1
+	dq	0
+
 
 section .text
 global _start
 
 _start:
-	and	rsp, -16
+	and	rsp, ~0xf
 	xor	ebp, ebp
 	call	main
 	mov	edi, eax
@@ -26,33 +59,52 @@ main:
 	push	rbp
 	mov	rbp, rsp
 	call	menu
-	xor	eax, eax
 	mov	rsp, rbp
 	pop	rbp
 	ret
 
 
 menu:
-	push	rbx
 	push	rbp
 	mov	rbp, rsp
 	sub	rsp, 16
-	lea	rbx, [rel m_arr]
-.f_loop:
-	mov	rax, [rbx]
-	test	rax, rax
-	jz	.f_out
-	mov	rdi, rax
+
+.show_menu:
+	lea	rdi, [rel menu_str]
 	call	my_print
-	add	rbx, 8
-	jmp	.f_loop
-.f_out:
 	call	my_input_num
+	cmp	eax, 1
+	jb	.invalid_menu_num
+	cmp	eax, 4
+	ja	.invalid_menu_num
+	lea	rdi, [rel menu_jump_table]
+	lea	rdi, [rdi + rax * 8 - 8]
+
+	cmp	qword [rdi], -1
+	je	.f_out
+
+	call	[rdi]
+	jmp	.show_menu
+.invalid_menu_num:
+	lea	rdi, [rel invalid_menu_num_str]
+	call	my_print
+	call	hold_screen
+	jmp	.show_menu
+
+.f_out:
+	lea	rdi, [rel tutup_aplikasi_str]
+	call	my_print
+	xor	eax, eax
 	mov	rsp, rbp
 	pop	rbp
-	pop	rbx
 	ret
 
+menu_list_daftar_barang:
+	lea	rdi, [rel daftar_barang_str]
+	call	my_print
+
+	call	hold_screen
+	ret
 
 my_strlen:
 	push	rbp
@@ -160,6 +212,16 @@ my_atoi:
 	pop	rbp
 	ret
 
+hold_screen:
+	push	rbp
+	mov	rbp, rsp
+	sub	rsp, 16
+	mov	rdi, rsp
+	mov	esi, 16
+	call	my_input
+	mov	rsp, rbp
+	pop	rbp
+	ret
 
 my_input:
 	push	rbx
@@ -215,7 +277,7 @@ sys_open:
 sys_read:
 	push	rbp
 	mov	rbp, rsp
-	mov	eax, 0
+	xor	eax, eax
 	syscall
 	pop	rbp
 	ret
