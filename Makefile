@@ -1,12 +1,12 @@
 
+all: cashier
 
-all: kasir
+const.S: const.c
+	$(CC) const.c -o const
+	./const > const.S
 
-kasir.o: kasir.asm
-	nasm -O3 -Wall -felf64 -g kasir.asm -o kasir.o
-
-kasir: kasir.o
-	ld kasir.o -o kasir
+cashier: cashier.S const.S
+	$(CC) -static -nostdlib -nostartfiles -ggdb3 -O3 -fPIC -o $@ cashier.S
 
 clean:
-	rm -vf kasir kasir.o
+	rm -vf cashier const const.S
