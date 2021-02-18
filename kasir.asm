@@ -1,4 +1,10 @@
 
+;
+; @author Ammar Faizi <ammarfaizi2@gmail.com> https://www.facebook.com/ammarfaizi2
+; @version 0.0.1
+; @license GNU GPLv2
+;
+
 [bits 64]
 
 section .rodata
