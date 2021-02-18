@@ -5,6 +5,15 @@
 ; @license GNU GPLv2
 ;
 
+;
+
+;  struct data_barang {
+;	uint64_t	id_barang;
+;	uint64_t	harga_barang;
+;	char		nama_barang[64];
+;  };
+;
+
 [bits 64]
 
 section .rodata
@@ -33,8 +42,11 @@ align	8
 daftar_barang_str:
 	db 0x1b, 0x63
 	db "----------------------------------------------------",10
-	db 9,"[ Menu Daftar Barang ]",10
+	db 9,"[ Menu Daftar Barang ]",10,0
+daftar_barang_kosong_str:
+	db 10,10,"Daftar barang masih kosong.",10,10,10
 	db "----------------------------------------------------",10,0
+
 
 align	8
 tutup_aplikasi_str:
@@ -42,9 +54,27 @@ tutup_aplikasi_str:
 
 
 align	8
+tambah_barang_str:
+	db 0x1b, 0x63
+	db "----------------------------------------------------",10
+	db 9,"--- Masukkan data barang yang hendak ditambahkan ---",10,0
+tambah_nama_barang_str:
+	db "Nama Barang (maks 64 karakter): ",0
+tambah_harga_barang_str:
+	db "Harga Barang: ",0
+tambah_jumlah_stok_barang_str:
+	db "Jumlah Stok Barang: ",0
+
+
+align	8
+file_database_barang:
+	db "database_barang.dat",0
+
+
+align	8
 menu_jump_table:
 	dq	menu_list_daftar_barang
-	dq	0
+	dq	menu_tambah_barang
 	dq	0
 	dq	-1
 	dq	0
@@ -106,11 +136,55 @@ menu:
 	ret
 
 menu_list_daftar_barang:
+	push	rbp
+	mov	rbp, rsp
 	lea	rdi, [rel daftar_barang_str]
 	call	my_print
 
+	mov	eax, 21
+	lea	rdi, [rel file_database_barang]
+	mov	esi, 0b100100100
+	syscall
+	test	rax, rax
+	jnz	.db_file_no_access
+
+
+	jmp	.f_out
+.db_file_no_access:
+	lea	rdi, [rel daftar_barang_kosong_str]
+	call	my_print
+
+.f_out:
 	call	hold_screen
+	mov	rsp, rbp
+	pop	rbp
 	ret
+
+
+menu_tambah_barang:
+	push	rbp
+	mov	rbp, rsp
+
+	lea	rdi, [rel tambah_barang_str]
+	call	my_print
+
+	lea	rdi, [rel tambah_nama_barang_str]
+	call	my_print
+
+	lea	rdi, [rel tambah_harga_barang_str]
+	call	my_print
+
+	lea	rdi, [rel tambah_jumlah_stok_barang_str]
+	call	my_print
+
+
+
+	call	hold_screen
+	mov	rsp, rbp
+	pop	rbp
+	ret
+
+
 
 my_strlen:
 	push	rbp
