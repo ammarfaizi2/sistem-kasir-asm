@@ -3,10 +3,10 @@
 all: kasir
 
 kasir.o: kasir.asm
-	nasm -fPIC -Wall -felf64 -g kasir.asm -o kasir.o
+	nasm -O3 -Wall -felf64 -g kasir.asm -o kasir.o
 
 kasir: kasir.o
-	ld -pic kasir.o -o kasir
+	ld kasir.o -o kasir
 
 clean:
 	rm -vf kasir kasir.o
